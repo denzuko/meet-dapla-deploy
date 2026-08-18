@@ -1,0 +1,31 @@
+#!/bin/sh
+#|-*- mode:lisp -*-|#
+#|
+exec ros -Q -- $0 "$@"
+|#
+(progn
+  (ros:ensure-asdf)
+  (asdf:load-asd (merge-pathnames "meet-dapla-deploy.asd" *load-pathname*))
+  #+quicklisp
+  (let ((needed '(:cl-inix :consfigurator :fiveam :dexador)))
+    (unless (every #'ql-dist:find-system (mapcar #'string-downcase needed))
+      (ql-dist:install-dist "http://dist.ultralisp.org/" :prompt nil))
+    (ql:quickload (list* :meet-dapla-deploy/deploy :meet-dapla-deploy/e2e needed)
+                  :silent t)))
+
+(declaim (optimize (speed 3) (safety 1) (debug 1)))
+
+(defpackage :ros.script.meet-dapla-deploy.3167498364
+  (:use :cl :meet-dapla-deploy/deploy :meet-dapla-deploy/e2e)
+  (:export #:main))
+
+(in-package :ros.script.meet-dapla-deploy.3167498364)
+
+(defun main (&rest argv)
+  "Entry point for `./meet-dapla-deploy.ros [e2e]`. With no arguments,
+   provisions the Gathio stack via DEPLOY-APP. With `e2e`, runs RUN-E2E
+   against whatever is already deployed."
+  (unless (member "e2e" argv :test #'string=)
+    (return-from main (deploy-app)))
+  (run-e2e))
+;;; vim: set ft=lisp lisp:

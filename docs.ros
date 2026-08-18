@@ -1,0 +1,23 @@
+#!/bin/sh
+#|-*- mode:lisp -*-|#
+#|
+exec ros -Q -- $0 "$@"
+|#
+(progn
+  (ros:ensure-asdf)
+  (asdf:load-asd (merge-pathnames "meet-dapla-deploy.asd" *load-pathname*))
+  #+quicklisp
+  (ql:quickload '(:meet-dapla-deploy/docs :40ants-doc :40ants-doc-full) :silent t))
+
+(defpackage :ros.script.docs
+  (:use :cl))
+
+(in-package :ros.script.docs)
+
+(defun main (&rest argv)
+  (declare (ignore argv))
+  (40ants-doc-full/gh-pages:update-asdf-system-docs
+   :meet-dapla-deploy/docs
+   :root-section 'meet-dapla-deploy/docs::@meet-dapla-deploy
+   :output-dir (merge-pathnames "docs/" (asdf:system-source-directory :meet-dapla-deploy/docs))))
+;;; vim: set ft=lisp lisp:
