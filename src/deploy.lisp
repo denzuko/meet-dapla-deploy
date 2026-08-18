@@ -231,6 +231,25 @@ backend ~A_be
           *haproxy-vhost-name*
           port)))
 
+(defprop quadlets-written :posix (user home data-mountpoint events-mountpoint secrets-path)
+  "Write all Gathio quadlet unit files into USER's systemd container
+   directory. UID is read at apply time via getent, after
+   ROOTLESS-SERVICE-ACCOUNT has run, so PublishPort is always correct."
+  (:desc (format nil "Gathio quadlet units written for ~A" user))
+  (:apply
+   (let ((quadlet-dir (format nil "~A/.config/containers/systemd" home)))
+     (consfigurator.property.file:containing-directory-exists
+      (format nil "~A/gathio.network" quadlet-dir))
+     (write-remote-file
+      (format nil "~A/gathio.network" quadlet-dir)
+      (cinix-write-string (gathio-network-sections)))
+     (write-remote-file
+      (format nil "~A/gathio-db.container" quadlet-dir)
+      (cinix-write-string (gathio-db-container-sections data-mountpoint)))
+     (write-remote-file
+      (format nil "~A/gathio.container" quadlet-dir)
+      (cinix-write-string (gathio-container-sections events-mountpoint secrets-path))))))
+
 (defprop quadlets-activated :posix (user)
   "Reload USER's user-scope systemd daemon and restart the gathio
    quadlet-generated services via `machinectl shell`."
@@ -239,6 +258,21 @@ backend ~A_be
    (mrun (format nil "machinectl shell ~A@ -- systemctl --user daemon-reload" user))
    (mrun (format nil "machinectl shell ~A@ -- systemctl --user restart gathio-db gathio"
                  user))))
+
+
+(defprop haproxy-vhost-written :posix ()
+  "Write the HAProxy vhost config for this service. Called after
+   ROOTLESS-SERVICE-ACCOUNT has run so service-account-uid resolves
+   correctly, then reloads HAProxy if the content changed."
+  (:desc (format nil "HAProxy vhost written for ~A" *haproxy-fqdn*))
+  (:apply
+   (let* ((cfg-path (format nil "/etc/haproxy/conf.d/~A.cfg" *haproxy-vhost-name*))
+          (new-content (haproxy-vhost-config))
+          (current (when (probe-file cfg-path)
+                     (uiop:read-file-string cfg-path))))
+     (unless (equal new-content current)
+       (write-remote-file cfg-path new-content)
+       (consfigurator.property.service:reloaded "haproxy")))))
 
 (defhost gathio-host (:deploy (:local))
   "The Gathio stack's host: three AES-256-GCM-encrypted ZFS datasets
@@ -257,21 +291,10 @@ backend ~A_be
   (images-pulled *service-user*
                   "oci.dapla.net/library/mongo:6"
                   "oci.dapla.net/ghcr.io/lowercasename/gathio:latest")
-  (has-content
-   (format nil "~A/.config/containers/systemd/gathio.network" *home-mountpoint*)
-   (cinix-write-string (gathio-network-sections)))
-  (has-content
-   (format nil "~A/.config/containers/systemd/gathio-db.container" *home-mountpoint*)
-   (cinix-write-string (gathio-db-container-sections *data-mountpoint*)))
-  (has-content
-   (format nil "~A/.config/containers/systemd/gathio.container" *home-mountpoint*)
-   (cinix-write-string (gathio-container-sections *events-mountpoint* *secrets-path*)))
+  (quadlets-written *service-user* *home-mountpoint*
+                    *data-mountpoint* *events-mountpoint* *secrets-path*)
   (quadlets-activated *service-user*)
-  (on-change
-      (has-content
-       (format nil "/etc/haproxy/conf.d/~A.cfg" *haproxy-vhost-name*)
-       (haproxy-vhost-config))
-    (reloaded "haproxy")))
+  (haproxy-vhost-written))
 
 (defun deploy-app ()
   "Provision the Gathio stack via GATHIO-HOST (Consfigurator, :local
