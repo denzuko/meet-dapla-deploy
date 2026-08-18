@@ -1,6 +1,4 @@
 ;;;; src/docs.lisp -- meet-dapla-deploy/docs
-;;;;
-;;;; 40ants-doc sections for the meet-dapla-deploy system.
 
 (defpackage :meet-dapla-deploy/docs
   (:use :cl)
@@ -14,16 +12,19 @@
   (@quadlet-builders section))
 
 (defsection @deploy-properties (:title "Consfigurator Properties")
-  (meet-dapla-deploy/deploy:zfs-encryption-key        function)
-  (meet-dapla-deploy/deploy:zfs-dataset-mounted       function)
-  (meet-dapla-deploy/deploy:rootless-service-account  function)
-  (meet-dapla-deploy/deploy:images-pulled             function)
-  (meet-dapla-deploy/deploy:quadlets-activated        function)
-  (meet-dapla-deploy/deploy:deploy-app                function))
+  (meet-dapla-deploy/deploy:zfs-encryption-key       function)
+  (meet-dapla-deploy/deploy:zfs-dataset-mounted      function)
+  (meet-dapla-deploy/deploy:rootless-service-account function)
+  (meet-dapla-deploy/deploy:images-pulled            function)
+  (meet-dapla-deploy/deploy:quadlets-written         function)
+  (meet-dapla-deploy/deploy:haproxy-vhost-written    function)
+  (meet-dapla-deploy/deploy:quadlets-activated       function)
+  (meet-dapla-deploy/deploy:deploy-app               function))
 
 (defsection @quadlet-builders (:title "Quadlet Unit Builders")
-  (meet-dapla-deploy/deploy:cinix-write-string             function)
-  (meet-dapla-deploy/deploy:invidious-network-sections     function)
-  (meet-dapla-deploy/deploy:invidious-db-container-sections function)
-  (meet-dapla-deploy/deploy:invidious-container-sections   function)
-  (meet-dapla-deploy/deploy:haproxy-vhost-config           function))
+  (meet-dapla-deploy/deploy:cinix-write-string              function)
+  (meet-dapla-deploy/deploy:service-account-uid             function)
+  (meet-dapla-deploy/deploy:gathio-network-sections         function)
+  (meet-dapla-deploy/deploy:gathio-db-container-sections    function)
+  (meet-dapla-deploy/deploy:gathio-container-sections       function)
+  (meet-dapla-deploy/deploy:haproxy-vhost-config            function))
