@@ -136,6 +136,13 @@
         (format s "~A=~A~%" (car kv) (cdr kv)))
       (format s "~%"))))
 
+    (when (and raw (plusp (length (string-trim '(#\Newline #\Space) raw))))
+      (parse-integer
+       (third
+        (uiop:split-string
+         (string-trim '(#\Newline #\Space) raw)
+         :separator '(#\:)))))))
+
 (defun gathio-network-sections ()
   "Cinix AST for gathio.network: internal-only network."
   '(("Network" . (("NetworkName" . "gathio")
@@ -190,7 +197,6 @@
    and iCal/AP-friendly buffer sizing, backend health-checked against
    gathio on loopback. Backend port is the service account UID, per
    dapla.net convention."
-  (let ((port (+ (service-account-uid *service-user*) *port-base*)))
   (format nil
 "frontend ~A_http
   bind *:80
@@ -259,8 +265,7 @@ backend ~A_be
   (:desc (format nil "HAProxy vhost written for ~A" *haproxy-fqdn*))
   (:check nil)
   (:apply
-   (let ((port (+ (service-account-uid *service-user*) *port-base*)))
-     (unless port
+   (     (unless port
        (consfigurator:inapplicable-property
         "Service account ~A does not exist; cannot determine port."
         *service-user*))
