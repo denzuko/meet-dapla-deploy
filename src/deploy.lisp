@@ -131,6 +131,18 @@
         (format s "~A=~A~%" (car kv) (cdr kv)))
       (format s "~%"))))
 
+(defun service-account-uid (username)
+  "Read USERNAME's UID from the local passwd database via getent, at
+   property apply time after ROOTLESS-SERVICE-ACCOUNT has run. The UID
+   is used as the loopback PublishPort, per dapla.net convention."
+  (parse-integer
+   (third
+    (uiop:split-string
+     (string-trim '(#\Newline #\Space)
+       (with-output-to-string (s)
+         (uiop:run-program (list "getent" "passwd" username) :output s)))
+     :separator '(#\:)))))
+
 (defun gathio-network-sections ()
   "Cinix AST for gathio.network: internal-only network."
   '(("Network" . (("NetworkName" . "gathio")
@@ -159,29 +171,33 @@
 (defun gathio-container-sections (events-mountpoint secrets-path)
   "Cinix AST for gathio.container: binds to 127.0.0.1 only, mounts the
    event images volume and the env secret. Outbound mail routes through
-   the panix.com smarthost configured via the env file."
-  `(("Unit" . (("Description" . "Gathio event management")
-               ("After"       . "network-online.target gathio-db.service")
-               ("Wants"       . "network-online.target")
-               ("Requires"    . "gathio-db.service")))
-    ("Container" . (("Image"           . "oci.dapla.net/ghcr.io/lowercasename/gathio:latest")
-                    ("ContainerName"   . "gathio")
-                    ("AutoUpdate"      . "registry")
-                    ("PublishPort"     . "127.0.0.1:3000:3000")
-                    ("EnvironmentFile" . ,secrets-path)
-                    ("Volume"          . ,(format nil "~A:/app/public/events:Z"
-                                                  events-mountpoint))
-                    ("Network"         . "gathio.network")
-                    ("Label"           . "io.containers.autoupdate=registry")))
-    ("Service" . (("Restart"         . "on-failure")
-                  ("TimeoutStartSec" . "120")
-                  ("TimeoutStopSec"  . "30")))
-    ("Install" . (("WantedBy" . "default.target")))))
+   the panix.com smarthost configured via the env file. The loopback port
+   is the service account UID, per dapla.net convention."
+  (let ((port (service-account-uid *service-user*)))
+    `(("Unit" . (("Description" . "Gathio event management")
+                 ("After"       . "network-online.target gathio-db.service")
+                 ("Wants"       . "network-online.target")
+                 ("Requires"    . "gathio-db.service")))
+      ("Container" . (("Image"           . "oci.dapla.net/ghcr.io/lowercasename/gathio:latest")
+                      ("ContainerName"   . "gathio")
+                      ("AutoUpdate"      . "registry")
+                      ("PublishPort"     . ,(format nil "127.0.0.1:~A:~A" port port))
+                      ("EnvironmentFile" . ,secrets-path)
+                      ("Volume"          . ,(format nil "~A:/app/public/events:Z"
+                                                    events-mountpoint))
+                      ("Network"         . "gathio.network")
+                      ("Label"           . "io.containers.autoupdate=registry")))
+      ("Service" . (("Restart"         . "on-failure")
+                    ("TimeoutStartSec" . "120")
+                    ("TimeoutStopSec"  . "30")))
+      ("Install" . (("WantedBy" . "default.target"))))))
 
 (defun haproxy-vhost-config ()
   "HAProxy vhost text: HTTP redirect, TLS frontend with security headers
    and iCal/AP-friendly buffer sizing, backend health-checked against
-   gathio on loopback."
+   gathio on loopback. Backend port is the service account UID, per
+   dapla.net convention."
+  (let ((port (service-account-uid *service-user*)))
   (format nil
 "frontend ~A_http
   bind *:80
@@ -206,13 +222,14 @@ backend ~A_be
   http-check expect status 200
   timeout connect 5s
   timeout server  60s
-  server gathio 127.0.0.1:3000 check inter 10s rise 2 fall 3
+  server gathio 127.0.0.1:~A check inter 10s rise 2 fall 3
 "
           *haproxy-vhost-name* *haproxy-vhost-name* *haproxy-fqdn* *haproxy-vhost-name*
           *haproxy-vhost-name* *haproxy-fqdn*
           *haproxy-vhost-name* *haproxy-fqdn*
           *haproxy-vhost-name* *haproxy-vhost-name*
-          *haproxy-vhost-name*))
+          *haproxy-vhost-name*
+          port)))
 
 (defprop quadlets-activated :posix (user)
   "Reload USER's user-scope systemd daemon and restart the gathio
