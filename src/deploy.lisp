@@ -136,23 +136,6 @@
         (format s "~A=~A~%" (car kv) (cdr kv)))
       (format s "~%"))))
 
-(defun service-account-uid (username)
-  "Read USERNAME's UID from the local passwd database via getent, at
-   property apply time after ROOTLESS-SERVICE-ACCOUNT has run. The UID
-   is used as the loopback PublishPort, per dapla.net convention.
-   Returns NIL if the account does not yet exist, allowing callers to
-   skip operations that depend on the UID."
-  (let ((raw (with-output-to-string (s)
-               (uiop:run-program (list "getent" "passwd" username)
-                                 :output s
-                                 :ignore-error-status t))))
-    (when (and raw (plusp (length (string-trim '(#\Newline #\Space) raw))))
-      (parse-integer
-       (third
-        (uiop:split-string
-         (string-trim '(#\Newline #\Space) raw)
-         :separator '(#\:)))))))
-
 (defun gathio-network-sections ()
   "Cinix AST for gathio.network: internal-only network."
   '(("Network" . (("NetworkName" . "gathio")
@@ -192,7 +175,6 @@
       ("Container" . (("Image"           . "oci.dapla.net/ghcr.io/lowercasename/gathio:latest")
                       ("ContainerName"   . "gathio")
                       ("AutoUpdate"      . "registry")
-                      ("PublishPort"     . ,(format nil "127.0.0.1:~A:~A" port port))
                       ("EnvironmentFile" . ,secrets-path)
                       ("Volume"          . ,(format nil "~A:/app/public/events:Z"
                                                     events-mountpoint))
