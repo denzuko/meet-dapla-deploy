@@ -164,7 +164,7 @@
                ("After"       . "network-online.target gathio-db.service")
                ("Wants"       . "network-online.target")
                ("Requires"    . "gathio-db.service")))
-    ("Container" . (("Image"           . "oci.dapla.net/gathio/gathio:latest")
+    ("Container" . (("Image"           . "oci.dapla.net/ghcr.io/lowercasename/gathio:latest")
                     ("ContainerName"   . "gathio")
                     ("AutoUpdate"      . "registry")
                     ("PublishPort"     . "127.0.0.1:3000:3000")
@@ -239,7 +239,7 @@ backend ~A_be
   (db-secret-file *secrets-path* *service-user*)
   (images-pulled *service-user*
                   "oci.dapla.net/library/mongo:6"
-                  "oci.dapla.net/gathio/gathio:latest")
+                  "oci.dapla.net/ghcr.io/lowercasename/gathio:latest")
   (has-content
    (format nil "~A/.config/containers/systemd/gathio.network" *home-mountpoint*)
    (cinix-write-string (gathio-network-sections)))
