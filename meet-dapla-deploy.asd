@@ -19,3 +19,10 @@ quadlets behind HAProxy at meet.dapla.net."
   :components ((:file "t/e2e"))
   :perform (asdf:test-op (op c)
              (uiop:symbol-call :fiveam :run! :meet-dapla-deploy-e2e)))
+
+(asdf:defsystem :meet-dapla-deploy/spec
+  :description "FiveAM specification tests for the quadlet template specifier refactor."
+  :depends-on (:meet-dapla-deploy/deploy :fiveam)
+  :components ((:file "t/spec"))
+  :perform (asdf:test-op (op c)
+             (uiop:symbol-call :meet-dapla-deploy/spec :run-spec)))

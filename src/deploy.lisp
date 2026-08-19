@@ -144,7 +144,7 @@
                   ("Subnet"      . "10.89.2.12/29")
                   ("Gateway"     . "10.89.2.13")))))
 
-(defun gathio-db-container-sections (data-mountpoint)
+(defun gathio-db-container-sections ()
   "Cinix AST for gathio-db.container: mongo:6, ZFS-backed volume,
    health-checked via mongosh ping."
   `(("Unit" . (("Description" . "Gathio MongoDB database")))
@@ -152,7 +152,7 @@
                     ("ContainerName" . "gathio-db")
                     ("AutoUpdate"    . "registry")
                     ("EnvironmentFile" . "%S/gathio/db.env")
-                    ("Volume"        . ,(format nil "~A:/data/db:Z" data-mountpoint))
+                    ("Volume"        . "/srv/%U/db:/data/db:Z")
                     ("Network"       . "gathio.network")
                     ("HealthCmd"     . "mongosh --quiet --eval \"db.adminCommand('ping').ok\" || exit 1")
                     ("HealthStartPeriod" . "15s")
@@ -164,7 +164,7 @@
                   ("TimeoutStopSec"  . "30")))
     ("Install" . (("WantedBy" . "default.target")))))
 
-(defun gathio-container-sections (events-mountpoint secrets-path)
+(defun gathio-container-sections ()
   "Cinix AST for gathio.container: binds to 127.0.0.1 only, mounts the
    event images volume and the env secret. Outbound mail routes through
    the panix.com smarthost configured via the env file. The loopback port
@@ -176,11 +176,15 @@
       ("Container" . (("Image"           . "oci.dapla.net/ghcr.io/lowercasename/gathio:latest")
                       ("ContainerName"   . "gathio")
                       ("AutoUpdate"      . "registry")
-                      ("EnvironmentFile" . ,secrets-path)
-                      ("Volume"          . ,(format nil "~A:/app/public/events:Z"
-                                                    events-mountpoint))
+                      ("Volume"          . "%h:/var/lib/gathio:ro")
+                      ("EnvironmentFile" . "%h/.env/secrets")
+                      ("Volume"          . "/srv/%U/events:/app/public/events:Z")
                       ("Network"         . "gathio.network")
-                      ("Label"           . "io.containers.autoupdate=registry")))
+                      ("Label"           . "io.containers.autoupdate=registry")
+                      ("Label"           . "org.cispec.application=meet-dapla-deploy")
+                      ("Label"           . "org.cispec.managed-by=consfigurator")
+                      ("Label"           . "org.cispec.fqdn=meet.dapla.net")
+                      ("Label"           . "org.cispec.service-account=gathio")))
       ("Service" . (("Restart"         . "on-failure")
                     ("TimeoutStartSec" . "120")
                     ("TimeoutStopSec"  . "30")))
@@ -223,7 +227,7 @@ backend ~A_be
           *haproxy-vhost-name* *haproxy-vhost-name*
           *haproxy-vhost-name*))
 
-(defprop quadlets-written :posix (user home data-mountpoint events-mountpoint secrets-path)
+(defprop quadlets-written :posix (user home)
   "Write all Gathio quadlet unit files into USER's systemd container
    directory. UID is read at apply time via getent, after
    ROOTLESS-SERVICE-ACCOUNT has run, so PublishPort is always correct."
@@ -237,10 +241,10 @@ backend ~A_be
       (cinix-write-string (gathio-network-sections)))
      (write-remote-file
       (format nil "~A/gathio-db.container" quadlet-dir)
-      (cinix-write-string (gathio-db-container-sections data-mountpoint)))
+      (cinix-write-string (gathio-db-container-sections)))
      (write-remote-file
       (format nil "~A/gathio.container" quadlet-dir)
-      (cinix-write-string (gathio-container-sections events-mountpoint secrets-path))))))
+      (cinix-write-string (gathio-container-sections))))))
 
 (defprop quadlets-activated :posix (user)
   "Reload USER's user-scope systemd daemon and restart the gathio
@@ -285,8 +289,7 @@ backend ~A_be
   (images-pulled *service-user*
                   "oci.dapla.net/library/mongo:6"
                   "oci.dapla.net/ghcr.io/lowercasename/gathio:latest")
-  (quadlets-written *service-user* *home-mountpoint*
-                    *data-mountpoint* *events-mountpoint* *secrets-path*)
+  (quadlets-written *service-user* *home-mountpoint*)
   (quadlets-activated *service-user*)
   (haproxy-vhost-written))
 
