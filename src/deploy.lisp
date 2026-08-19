@@ -184,7 +184,7 @@
       ("Service" . (("Restart"         . "on-failure")
                     ("TimeoutStartSec" . "120")
                     ("TimeoutStopSec"  . "30")))
-      ("Install" . (("WantedBy" . "default.target"))))))
+      ("Install" . (("WantedBy" . "default.target")))))
 
 (defun haproxy-vhost-config ()
   "HAProxy vhost text: HTTP redirect, TLS frontend with security headers
