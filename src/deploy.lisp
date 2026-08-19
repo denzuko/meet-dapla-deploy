@@ -259,18 +259,14 @@ backend ~A_be
   (:desc (format nil "HAProxy vhost written for ~A" *haproxy-fqdn*))
   (:check nil)
   (:apply
-   (     (unless port
-       (consfigurator:inapplicable-property
-        "Service account ~A does not exist; cannot determine port."
-        *service-user*))
-     (let* ((cfg-path (format nil "/etc/haproxy/conf.d/~A.cfg" *haproxy-vhost-name*))
-            (new-content (haproxy-vhost-config))
-            (current (when (probe-file cfg-path)
-                       (uiop:read-file-string cfg-path))))
-       (unless (equal new-content current)
-         (containing-directory-exists cfg-path)
-         (write-remote-file cfg-path new-content)
-         (consfigurator.property.service:reloaded "haproxy"))))))
+   (let* ((cfg-path (format nil "/etc/haproxy/conf.d/~A.cfg" *haproxy-vhost-name*))
+          (new-content (haproxy-vhost-config))
+          (current (when (probe-file cfg-path)
+                     (uiop:read-file-string cfg-path))))
+     (unless (equal new-content current)
+       (containing-directory-exists cfg-path)
+       (write-remote-file cfg-path new-content)
+       (consfigurator.property.service:reloaded "haproxy")))))
 
 (defhost gathio-host (:deploy (:local))
   "The Gathio stack's host: three AES-256-GCM-encrypted ZFS datasets
