@@ -136,12 +136,6 @@
         (format s "~A=~A~%" (car kv) (cdr kv)))
       (format s "~%"))))
 
-    (when (and raw (plusp (length (string-trim '(#\Newline #\Space) raw))))
-      (parse-integer
-       (third
-        (uiop:split-string
-         (string-trim '(#\Newline #\Space) raw)
-         :separator '(#\:)))))))
 
 (defun gathio-network-sections ()
   "Cinix AST for gathio.network: internal-only network."
@@ -321,12 +315,12 @@ backend ~A_be
    (mrun "loginctl" "terminate-user" user)
    (mrun "loginctl" "disable-linger" user)
    (mrun "userdel" user)
-   (mrun "zfs" "destroy" "-r" 'storage/users/gathio')
-   (mrun "zfs" "destroy" "-r" 'storage/containers/gathio-db')
-   (mrun "zfs" "destroy" "-r" 'storage/containers/gathio-events')
-   (mrun "rm" "-f" '/etc/zfs-keys/gathio-users.key')
-   (mrun "rm" "-f" '/etc/zfs-keys/gathio-db.key')
-   (mrun "rm" "-f" '/etc/zfs-keys/gathio-events.key')))
+   (mrun "zfs" "destroy" "-r" "storage/users/gathio")
+   (mrun "zfs" "destroy" "-r" "storage/containers/gathio-db")
+   (mrun "zfs" "destroy" "-r" "storage/containers/gathio-events")
+   (mrun "rm" "-f" "/etc/zfs-keys/gathio-users.key")
+   (mrun "rm" "-f" "/etc/zfs-keys/gathio-db.key")
+   (mrun "rm" "-f" "/etc/zfs-keys/gathio-events.key")))
 
 (defun deploy-app ()
   "Provision the Gathio stack via GATHIO-HOST (Consfigurator, :local
