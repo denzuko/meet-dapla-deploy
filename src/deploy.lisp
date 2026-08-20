@@ -147,11 +147,12 @@
 (defun gathio-db-container-sections ()
   "Cinix AST for gathio-db.container: mongo:6, ZFS-backed volume,
    health-checked via mongosh ping."
-  `(("Unit" . (("Description" . "Gathio MongoDB database")))
+  `(("Unit" . (("Description" . "Gathio MongoDB database")
+              ("After"       . "zfs-mount.service")))
     ("Container" . (("Image"         . "oci.dapla.net/library/mongo:6")
                     ("ContainerName" . "gathio-db")
                     ("AutoUpdate"    . "registry")
-                    ("EnvironmentFile" . "%S/gathio/db.env")
+                    ("EnvironmentFile" . "%h/.env/secrets")
                     ("Volume"        . "/srv/%U/db:/data/db:Z")
                     ("Network"       . "gathio.network")
                     ("HealthCmd"     . "mongosh --quiet --eval \"db.adminCommand('ping').ok\" || exit 1")
