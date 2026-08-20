@@ -140,10 +140,14 @@
 
 ;;; ── gathio-db.container ──────────────────────────────────────────────
 
-(test db-zfs-dependency
-  "gathio-db.container declares After=zfs-mount.service."
+(test db-network-dependency
+  "gathio-db.container waits for gathio.network (user-scope).
+   Note: zfs-mount.service is system-scope and cannot be referenced
+   from user-scope quadlet units; ZFS ordering is handled by the
+   zfs-dataset-mounted Consfigurator property running before
+   quadlets-activated in the defhost sequence."
   (is (ini-has (cinix-write-string (gathio-db-container-sections))
-               "After=zfs-mount.service")))
+               "After=gathio.network")))
 
 (test db-volume-srv
   "gathio-db.container data volume uses /srv/%U/db specifier."

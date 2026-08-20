@@ -148,7 +148,7 @@
   "Cinix AST for gathio-db.container: mongo:6, ZFS-backed volume,
    health-checked via mongosh ping."
   `(("Unit" . (("Description" . "Gathio MongoDB database")
-              ("After"       . "zfs-mount.service")))
+              ("After"       . "gathio.network")))
     ("Container" . (("Image"         . "oci.dapla.net/library/mongo:6")
                     ("ContainerName" . "gathio-db")
                     ("AutoUpdate"    . "registry")
