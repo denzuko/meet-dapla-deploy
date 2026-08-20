@@ -44,7 +44,6 @@
 
 (defsection @quadlet-builders (:title "Quadlet Unit Builders")
   (meet-dapla-deploy/deploy:cinix-write-string              function)
-  (meet-dapla-deploy/deploy:service-account-uid             function)
   (meet-dapla-deploy/deploy:gathio-network-sections         function)
   (meet-dapla-deploy/deploy:gathio-db-container-sections    function)
   (meet-dapla-deploy/deploy:gathio-container-sections       function)
